@@ -1,0 +1,285 @@
+Complete CICD DevOps Implementation from Scracth Using Jenkins:
+===============================================================
+Agenda:
+======================================================
+1. Planning Phase		: JIRA
+2. Source Code Management	: GIT
+3. Code Review			: SONARQUBE
+4. Build Management		: Maven
+5. Unit Testing			: JUNIT
+6. Packaging			: JAR, WAR
+7. Artifact Repository		: NEXUS
+8. Deploy to QA Boxes		: CHEF/ Docker
+9. Testing			: SELINIUM
+10.Code Coverage		: Kubernetes, JACOCO
+=======================================================
+
+Steps to Implement CICD Using EC2 Instance(AWS):
+================================================
+=> First we need to launch an Instance in AWS (RedHat Enterprise Linux 7.5 (HVM) SSD volume type).
+=> Select the instance as General Purpose and type as "t2 Large" with "2 CORE CPU" and "8GB RAM".
+=> In ADD STORAGE we can take "30GB" HardDisk.
+=> Configure Security group with (type=HTTP, Protocol=TCP  Port Range= 80 ). 
+=> Download the new key pair with the name as "CICDKeyPair.pem".
+=> Then launch the Instance
+=> You should login into RedHat machine through "Putty".
+=> Open "Putty". Paste the Public IP address of EC2 Instance. and goto Putty settings under 
+   Connection/SSH/Auth/Browse the "CICDKeyPair.ppk" then it will open the Putty session. 
+=> Login as: ec2-user
+==================================================================================================
+
+=> Now you have logged into "ec2-user".
+==================================================================================================================================================
+
+NOW WE SHOULD INSTALL DOCKER COMMUNITY EDITION ON EC2 INSTANCE:
+--------------------------------------------------------------
+
+=> Step 1 - Install required packages. yum-utils provides the yum-config-manager utility, and device-mapper-persistent-data and lvm2 are required by     	    the devicemapper storage driver.
+		$ sudo -s 
+		$ sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+=> Step 2 - Use the following command to set up the stable repository
+		$ sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+=> Step 3 - Install the latest version of Docker CE
+		$ sudo yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+		$ sudo yum-config-manager --enable rhui-REGION-rhel-server-extras
+		$ sudo yum install -y docker-ce
+		$ sudo yum install docker-ce
+            # Verify Docker Installations
+		$ docker -v
+            # Docker is installed but not started. The docker group is created, but no users are added to the group.
+=> Step 4 - Enable Docker
+		$ sudo systemctl enable docker
+=> Step 5 - Start Docker
+		$ sudo systemctl start docker
+		$ docker info
+=> Step 6 - Verify that docker is installed correctly by running the hello-world image.
+		$ sudo docker run hello-world
+
+===================================================================================================================================================
+1. PLANNING PHASE: JIRA
+------------------------
+INSTALLING JIRA ON EC2 INSTANCE
+--------------------------------
+=> Goto "www.hub.docker.com"
+=> Download the Image of JIRA (In searchbar Search for JIRA)
+=> Open and copy the docker pull code (ex: docker pull cptactionhank/atlassian-jira)
+=> Paste the above code in Instance.
+=> To quickly get started running a JIRA Core instance, use the following command:
+		$ docker run --detach --publish 8085:8080 cptactionhank/atlassian-jira:latest
+=> Goto EC2 instance and pickup the Public IP and paste in Browser and give the Port number as 8085 (ex: http://IP:PORT)
+=> It will open the JIRA Setup page.
+	Select the option as "set it up for me" then click on OK.
+=> Then login with your details
+=> Create a new Project/ Project Management/ Give Name (CICD) and Key what ever you want.
+=> Create a New Issue:
+   ISSUE: 1
+	Project Name: CICD1
+	Issue Type  : Task
+	Summary	    : CICD logging page need to be created
+	Due Date    : <Give the date it should be done by>
+	Assignee    : Assign to me
+	Priority    : Highest
+	Labels	    : Release 1.0
+    Click on create.
+=> Create Another Issue same as above but need to change the below Field
+   ISSUE: 2
+	Project Name: CICD2
+    	Summary	    : CICD Welcome page should be developed
+==================================================================================================================================================
+2. SOURCE CODE MANAGEMENT: GIT
+------------------------------
+JIRA WITH GIT:
+--------------
+=> Goto Jira/settings/addons/search for GIT/Git Integration for JIRA/ Free Trail(Get the license by giving username and password)/ Manage adons/
+=> Under Git Integration for Jira/ Configure/ Connect to git Repository/ Get the .git repo URL(https://github.com/Theja212/helloworld-java-maven.git)    and paste in Repo Location/Save/ Finish.
+=> Goto GIT and now change the code in <.java> file. Give the JIRA key(CICD1 or CICD2) in Commit changes tab/ click on Commit changes
+=> It will automatically shows the code commit integration in JIRA/ CICD1. After solving the issue you can click on DONE in CICD1. It will disappear
+   after you have done with the issue.
+=================================================================================================================================================
+3. CODE REVIEW: SONARQUBE
+-------------------------
+INSTALLING SONARQUBE ON EC2 INSTANCE
+-------------------------------------
+Prerequisites:
+  Java need to be downloaded (openjdk 1.8.0 jdk)
+=> Goto "www.hub.docker.com"
+=> Download the official Image of SONARQUBE (In searchbar Search for SONARQUBE)
+=> Open and copy the docker pull code (ex: docker pull sonarqube)
+=> Paste the above code in Instance.
+=> Run SonarQube
+   The server is started this way:
+	$ docker run -d --name sonarqube -p 9000:9000 sonarqube
+=> Goto EC2 instance and pickup the Public IP and paste in Browser and give the Port number as 9000 (ex: http://IP:PORT)
+=> It will open the SONARQUBE Dashboard.
+	Sonarqube default credentials are 
+		username = admin
+		password = admin
+=> In order to run the SONARQUBE you need to have three elements
+	 SONARQUBE Server
+	 Source Code
+	 Scanner
+=> Goto GitHub and Download the repo.zip file (ex: https://github.com/Theja212/java-sonar-runner-simple.git)
+=> Exctact the .zip file and create a folder in D:\CICD\sonar-src(copy the files into this directory)
+=> You should Download the SONARQUBE RUNNER from (https://www.sonarqube.org/downloads/)
+=> You need to change the IP address in "sonar-scanner.properties" file (C:\Tools\sonarqubehome\conf\sonar-scanner.properties)
+=> "sonar-scanner.properties" file you should change to(sonar.host.url=http://IP:9000)
+=> You have to run the SONARQUBE SCANNER by using "cmd" in windows.
+=> Goto Command Prompt Window. change the directory: Run the below commands in CMD 
+	> D:\CICD\sonar-src
+	> d:
+	> C:\Tools\sonarqubehome\sonar-scanner.bat
+===================================================================================================================================================
+7. ARTIFACT REPOSITORY: NEXUS
+-----------------------------
+=> Goto "www.hub.docker.com"
+=> Download the Image of NEXUS (In searchbar Search for sonartype/nexus)
+=> Open and copy the docker pull code (ex: docker pull sonatype/nexus)
+=> Paste the above code in Instance.
+=> To run (if port 8081 is open on your host):
+	$ docker run -d -p 8081:8081 --name nexus sonatype/nexus:oss
+=> How to stop or remove the running contrainers
+	$ docker rm  $(docker ps -a -q)
+=> Goto EC2 instance and pickup the Public IP and paste in Browser and give the Port number as 8081 (ex: http://IP:8081/nexus)
+
+
+=> Login as an Admin
+	username: admin
+	password: admin123
+=> Goto Security/ Click on users/ Right-click on Deployment Set Password as NewPassword: deployment123 and confirm the password.
+=> Goto maven installed server 
+	$/root/apache-maven-3.6.0/conf/settings.xml
+	<server>
+      	   <id>deployment</id>
+           <username>deployment</username>
+           <password>deployment123</password>
+    	</server>
+
+=> Where we Should create Repository for Release and Snapshot.
+=> Goto Repositories/ Click on Add+/ Hosted Repository/ Give Repo ID and Repo Name/ Select Repo Policy as "Release"/ Click on Save.
+=> Goto Repositories/ Click on Add+/ Hosted Repository/ Give Repo ID and Repo Name/ Select Repo Policy as "Snapshot"/ Click on Save.
+=> Copy the Both Release and Snapshot URL'S and change in GitHub/ Repository/ Open "pom.xml" and at last change the code like below in <url> tags.
+	<distributionManagement>
+   	 <repository>
+      		  <id>deployment</id>
+      		  <name>Internal Releases1</name>
+       	 <url>http://13.233.99.35:8081/nexus/content/repositories/Saiteja/</url>
+   	 </repository>
+   	 <snapshotRepository>
+        <id>deployment</id>
+      		  <name>Internal Releases</name>
+      		  <url>http://13.233.99.35:8081/nexus/content/repositories/theja/</url>
+   	 </snapshotRepository>
+	</distributionManagement>
+
+===================================================================================================================================================
+JENKINS INSTALLATION:
+---------------------
+=> Install the java 1.8.0jdk. 
+	$ sudo yum install java-1.8.0-openjdk-devel
+=> Set the home path of java
+	$ mv jdk1.8.0_92 jdk18
+	$ export JAVA_HOME="/opt/jdk18"
+	$ export PATH=$JAVA_HOME/bin:$PATH
+	$ java -version
+
+ DOWNLOAD GIT ON EC2 INSTANCE:
+------------------------------
+=> Goto instance run the below command to install GIT.
+	$ yum install git
+
+ DOWNLOAD JENKINS ON EC2 INSTANCE:
+-----------------------------------
+=> Goto (https://pkg.jenkins.io/redhat-stable/) install in "opt" directory
+  	$ sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+	$ sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+	$ yum install jenkins
+   # To stop the Jenkins Services:
+	$ systemctl stop jenkins 
+   # To start the Jenkins Services:
+	$ systemctl start jenkins 
+   # To verify if the Jenkins Services are running or not:
+	$ ps -eaf | grep -i jenkins 
+   # To know the jenkins used directory location, refer the process log of following commands
+	$ ps -eaf | grep -i jenkins 
+
+=> Goto EC2 instance and pickup the Public IP and paste in Browser and give the Port number as 8080 (ex: http://IP:8080)
+=> Copy the path (var/lib/jenkins/secrects/initialAdminPassword)
+=> Goto instance 
+	$ more var/lib/jenkins/secrects/initialAdminPassword
+=> You will get password with the above command copy the password paste in Jenkins dashboard under Administrator Password.
+=> Fill the Create First Admin User page with appropriate names. After tha save and finish.
+------------------------------------------------------------------------------------------------------------------------
+ CREATING A NEW JOB IN JENKINS:
+---------------------------------
+=> Select freestyle job (Name: SONARQUBE)
+=> Under the Source Code Management: Git
+ 	Repository URL: https://github.com/Theja212/java-sonar-runner-simple.git
+=> Click on save and Then Click on Build Now.
+-----------------------------------------------------------------------------------
+=> Setting up the SONARQUBE SERVER and SCANNER
+=> Goto Jenkins dashboard/Manage jenkins/Manage Plugins/Available tab/install this plugin: "SonarQube Scanner for Jenkins"
+=> Goto Jenkins dashboard/Manage jenkins/Global Tool Configuaration/SonarQube Servers
+	Name		: sonar
+	Server URL	: http://IP:9000
+	Server Version	: 5.3 Higher
+	Server Authentication: You can get it from (sonarqube dashboard/administrator/MyAccount/security/Generate a new tocken: jenkins/copy tocken)
+   Then save and apply.
+
+=> Setting up the SONARQUBE SCANNER
+=> Goto Jenkins dashboard/Manage jenkins/Global Tool Configuaration/SonarQube Scanner/Add the Sonarqube Scanner/
+	Name	: scanner
+	version	: SonarQube Scanner 3.0.0.702
+   Then save and apply and BuildNow.
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ INTEGRATE BUILD, TEST AND PACKAGE
+-----------------------------------
+=> Goto Jenkins dashboard/Manage jenkins/Global Tool Configuaration/Maven
+	Name	: maven
+	vesion	: 3.3.9
+-----------------------------------
+=> Select freestyle job (Name: BUILD)
+=> Under the Source Code Management: Git
+ 	Repository URL: https://github.com/Theja212/helloworld-java-maven.git
+=> Under Build/ Invoke Top-level Maven targets/ Goal: compile
+   Then save and apply.  
+
+=> Goto the Jenkins Dashboard/BUILD(Project)/Configure/Build
+	Maven Version	: maven
+	Target		: compile
+   Then save and apply and BuildNow.
+-----------------------------------
+=> Select freestyle job (Name: UT)
+=> Under the Source Code Management: Git
+ 	Repository URL: https://github.com/Theja212/helloworld-java-maven.git
+=> Under Build/ Invoke Top-level Maven targets/ Goal: test
+   Then save and apply and BuildNow. 
+-----------------------------------
+=> Select freestyle job (Name: PACKAGE)
+=> Under the Source Code Management: Git
+ 	Repository URL: https://github.com/Theja212/helloworld-java-maven.git
+=> Under Build/ Invoke Top-level Maven targets/ Goal: package
+   Then save and apply and BuildNow.
+-----------------------------------
+=> Select freestyle job (Name: DEPLOY TO NEXUS)
+=> Under the Source Code Management: Git
+ 	Repository URL: https://github.com/Theja212/helloworld-java-maven.git
+=> Under Build/ Invoke Top-level Maven targets/ Goal: deploy
+   Then save and apply and BuildNow.
+---------------------------------------------------------------------------------
+ BUILDING PIPELINE: DEPLOYMENT LIFECYCLE
+-----------------------------------------
+ 	BUILD--->UT--->PACKAGE--->DEPLOY TO NEXUS
+=> Goto Manage Jenkins/Manage plugins/ available/ Build Pipeline plugin and install with out restart.
+=> Goto Jenkins Dashboard/ Click on + icon/ BuildPipeline View / Apply and save.
+=> Open BUILD /Configure/ Post build action: Build Other Projects/ projects to build: UT,Packaging,DeploytoNexus.
+=> Goto Jenkins Dashboard and open BUILD click on BuildNow.
+=> To see the Build Pipeline  goto dashboard and click on Pipeline then you can the Build pipeline.
+==========================================================================================================================
+ INTEGRATING CONFIGURATION MANAGEMENT: CHEF
+------------------------------------------------
+=> Login to manage.chef.io 
+=> Goto Administration and Create an Organization with a name.
+=> Download Starter Kit under Organizations
+=> Goto Instance and search for the "chef-starter.zip" file and unzip it using "unzip chef-starter.zip"
+=> Installing chef commands / Google/ chefdk/ you can download from "https://downloads.chef.io/chefdk/"
+=> 
